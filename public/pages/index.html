@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="TalentSync, gestión integral de reclutamiento">
+  <title>TalentSync</title>
+  <link rel="stylesheet" href="../styles/index.css">
+</head>
+<body>
+  <div id="offline" class="offline" role="status" hidden>Sin conexión. Las operaciones de escritura están temporalmente deshabilitadas.</div>
+
+  <main id="login-view" class="login-view">
+    <section class="login-card" aria-labelledby="login-title">
+      <a class="brand brand--login" href="#" aria-label="TalentSync inicio"><span class="brand-mark">T</span><span>Talent<span>Sync</span></span></a>
+      <p class="eyebrow">Portal de reclutamiento</p>
+      <h1 id="login-title">Bienvenido de nuevo</h1>
+      <p class="muted">Ingresa tus credenciales para continuar.</p>
+      <form id="login-form" class="form-stack">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" autocomplete="username" placeholder="emilys" required>
+        <label for="password">Contraseña</label>
+        <div class="password-field">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <button id="toggle-password" class="icon-btn" type="button" aria-label="Mostrar contraseña">◉</button>
+        </div>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button class="btn btn--primary btn--full" type="submit">Iniciar sesión</button>
+      </form>
+      <p class="demo-hint">Demo: <strong>emilys</strong> / <strong>emilyspass</strong></p>
+    </section>
+  </main>
+
+  <div id="app" class="app" hidden>
+    <div id="overlay" class="overlay" hidden></div>
+    <aside id="sidebar" class="sidebar" aria-label="Navegación principal">
+      <div class="sidebar-head">
+        <a class="brand" href="#dashboard"><span class="brand-mark">T</span><span>Talent<span>Sync</span></span></a>
+        <button id="close-menu" class="icon-btn mobile-only" aria-label="Cerrar menú">×</button>
+      </div>
+      <div class="profile">
+        <img id="profile-img" alt="Avatar del reclutador">
+        <div><strong id="profile-name">Recruiter</strong><small>Recruitment manager</small></div>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-actions">
+        <button class="btn btn--primary btn--full" data-create="vacancies">＋ Publicar vacante</button>
+        <button id="logout" class="btn btn--ghost btn--full">↪ Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <section class="shell">
+      <header class="topbar">
+        <button id="open-menu" class="icon-btn mobile-only" aria-label="Abrir menú">☰</button>
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><label class="sr-only" for="global-search">Buscar</label><input id="global-search" type="search" placeholder="Buscar..."></div>
+        <div class="top-actions">
+          <div class="accessibility-tools" aria-label="Herramientas de accesibilidad">
+            <button id="theme-light" class="icon-btn access-btn" type="button" aria-label="Activar modo claro" title="Modo claro"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></button>
+            <button id="theme-dark" class="icon-btn access-btn" type="button" aria-label="Activar modo oscuro" title="Modo oscuro"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 15.2A8 8 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"></path></svg></button>
+            <div class="access-menu-wrap">
+              <button id="color-menu-button" class="icon-btn access-btn" type="button" aria-label="Opciones para daltonismo" aria-haspopup="true" aria-expanded="false" aria-controls="color-menu" title="Modos de daltonismo"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 0 18Z"></path></svg></button>
+              <div id="color-menu" class="access-menu" role="menu" hidden>
+                <strong>Percepción del color</strong>
+                <button type="button" role="menuitemradio" aria-checked="true" data-color-mode="none">Colores estándar</button>
+                <button type="button" role="menuitemradio" aria-checked="false" data-color-mode="deuteranopia">Deuteranopia</button>
+                <button type="button" role="menuitemradio" aria-checked="false" data-color-mode="protanopia">Protanopia</button>
+                <button type="button" role="menuitemradio" aria-checked="false" data-color-mode="tritanopia">Tritanopia</button>
+              </div>
+            </div>
+            <button id="voice-search" class="icon-btn access-btn" type="button" aria-label="Activar dictado de voz para buscar" aria-pressed="false" title="Dictado de voz"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"></path></svg></button>
+            <button id="font-size" class="icon-btn access-btn font-button" type="button" aria-label="Aumentar tamaño del texto" title="Tamaño del texto">A<span>+</span></button>
+          </div>
+          <div class="notification-wrap">
+            <button id="notification-button" class="icon-btn notification" type="button" aria-label="Abrir notificaciones" aria-expanded="false" aria-controls="notification-panel"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path></svg><span></span></button>
+            <section id="notification-panel" class="notification-panel" aria-labelledby="notification-title" hidden><div class="panel-head"><h2 id="notification-title">Notificaciones</h2><button class="icon-btn" type="button" data-close-notifications aria-label="Cerrar notificaciones">×</button></div><div id="notification-list"></div></section>
+          </div>
+          <button id="profile-button" class="avatar-button" type="button" aria-label="Abrir opciones de perfil" aria-expanded="false" aria-controls="profile-menu"><img id="top-avatar" class="avatar" alt="Avatar"></button>
+          <div id="profile-menu" class="profile-menu" hidden><strong id="profile-menu-name">Recruiter</strong><small>Cuenta de reclutamiento</small><button type="button" data-profile-logout>Cerrar sesión</button></div>
+        </div>
+      </header>
+      <main id="content" class="content" tabindex="-1" aria-live="polite"></main>
+    </section>
+  </div>
+
+  <dialog id="modal" class="modal" aria-labelledby="modal-title">
+    <div class="modal-head"><div><p id="modal-kicker" class="eyebrow"></p><h2 id="modal-title"></h2></div><button class="icon-btn" data-close-modal aria-label="Cerrar diálogo">×</button></div>
+    <div id="modal-body"></div>
+  </dialog>
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="../js/index.js"></script>
+</body>
+</html>
