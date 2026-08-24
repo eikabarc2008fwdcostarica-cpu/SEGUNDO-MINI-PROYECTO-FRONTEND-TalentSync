@@ -39,47 +39,285 @@ function icon(name) { return `<svg aria-hidden="true" viewBox="0 0 24 24">${icon
 
 const content = $("#content");
 const modal = $("#modal");
-const defaultPreferences = { theme: "light", colorMode: "none", fontScale: "normal" };
+const ACCESSIBILITY_STORAGE_KEY = "talentsync_accessibility";
+const defaultPreferences = {
+  theme: "light",
+  colorMode: "none",
+  fontScale: "normal",
+  voiceEnabled: false
+};
+const validThemes = ["light", "dark", "high-contrast"];
+const validColorModes = ["none", "protanopia", "deuteranopia", "tritanopia", "monochrome"];
+const validFontScales = ["small", "normal", "large", "xlarge"];
+
 let preferences = loadAccessibilityPreferences();
 let voiceRecognition = null;
 
 function loadAccessibilityPreferences() {
-  try { return { ...defaultPreferences, ...JSON.parse(localStorage.getItem("talentsync_accessibility")) }; }
-  catch { return { ...defaultPreferences }; }
+  try {
+    const savedPreferences = JSON.parse(localStorage.getItem(ACCESSIBILITY_STORAGE_KEY));
+    const loadedPreferences = { ...defaultPreferences, ...savedPreferences };
+
+    if (!validThemes.includes(loadedPreferences.theme)) loadedPreferences.theme = "light";
+    if (!validColorModes.includes(loadedPreferences.colorMode)) loadedPreferences.colorMode = "none";
+    if (!validFontScales.includes(loadedPreferences.fontScale)) loadedPreferences.fontScale = "normal";
+    loadedPreferences.voiceEnabled = Boolean(loadedPreferences.voiceEnabled);
+
+    return loadedPreferences;
+  } catch {
+    return { ...defaultPreferences };
+  }
 }
+
+function saveAccessibilityPreferences() {
+  localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(preferences));
+}
+
+function getCurrentVisualMode() {
+  if (preferences.colorMode !== "none") return preferences.colorMode;
+  if (preferences.theme === "dark") return "dark";
+  if (preferences.theme === "high-contrast") return "high-contrast";
+  return "base";
+}
+
 function applyAccessibilityPreferences() {
   const root = document.documentElement;
+  const currentVisualMode = getCurrentVisualMode();
+
   root.dataset.theme = preferences.theme;
   root.dataset.colorMode = preferences.colorMode;
   root.dataset.fontScale = preferences.fontScale;
-  localStorage.setItem("talentsync_accessibility", JSON.stringify(preferences));
-  $("#theme-light").classList.toggle("active", preferences.theme === "light");
-  $("#theme-dark").classList.toggle("active", preferences.theme === "dark");
-  $("#theme-light").setAttribute("aria-pressed", String(preferences.theme === "light"));
-  $("#theme-dark").setAttribute("aria-pressed", String(preferences.theme === "dark"));
-  document.querySelectorAll("[data-color-mode]").forEach(button => button.setAttribute("aria-checked", String(button.dataset.colorMode === preferences.colorMode)));
-  const fontLabels = { normal: "Aumentar tamaño del texto", large: "Aumentar texto al tamaño extra grande", xlarge: "Restablecer tamaño del texto" };
-  $("#font-size").setAttribute("aria-label", fontLabels[preferences.fontScale]);
-  $("#font-size").title = fontLabels[preferences.fontScale];
-  $("#font-size").classList.toggle("active", preferences.fontScale !== "normal");
+
+  saveAccessibilityPreferences();
+
+  const lightButton = $("#theme-light");
+  const darkButton = $("#theme-dark");
+  const fontButton = $("#font-size");
+  const voiceToggle = $("#login-voice-toggle");
+  const voiceStatus = $("#login-voice-status");
+
+  if (lightButton) {
+    const isLight = preferences.theme === "light" && preferences.colorMode === "none";
+    lightButton.classList.toggle("active", isLight);
+    lightButton.setAttribute("aria-pressed", String(isLight));
+  }
+
+  if (darkButton) {
+    const isDark = preferences.theme === "dark" && preferences.colorMode === "none";
+    darkButton.classList.toggle("active", isDark);
+    darkButton.setAttribute("aria-pressed", String(isDark));
+  }
+
+  document.querySelectorAll("[data-color-mode]").forEach(button => {
+    const isSelected = button.dataset.colorMode === preferences.colorMode;
+    button.setAttribute("aria-checked", String(isSelected));
+  });
+
+  document.querySelectorAll("[data-login-theme]").forEach(button => {
+    const isSelected = button.dataset.loginTheme === currentVisualMode;
+    button.classList.toggle("active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+
+  document.querySelectorAll("[data-login-font-scale]").forEach(button => {
+    const isSelected = button.dataset.loginFontScale === preferences.fontScale;
+    button.classList.toggle("active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+
+  if (fontButton) {
+    const fontLabels = {
+      small: "Restablecer tamaño del texto",
+      normal: "Aumentar tamaño del texto",
+      large: "Aumentar texto al tamaño extra grande",
+      xlarge: "Reducir tamaño del texto"
+    };
+
+    fontButton.setAttribute("aria-label", fontLabels[preferences.fontScale]);
+    fontButton.title = fontLabels[preferences.fontScale];
+    fontButton.classList.toggle("active", preferences.fontScale !== "normal");
+  }
+
+  if (voiceToggle) {
+    voiceToggle.classList.toggle("active", preferences.voiceEnabled);
+    voiceToggle.setAttribute("aria-pressed", String(preferences.voiceEnabled));
+    voiceToggle.setAttribute(
+      "aria-label",
+      preferences.voiceEnabled ? "Desactivar asistente de voz" : "Activar asistente de voz"
+    );
+  }
+
+  if (voiceStatus) {
+    voiceStatus.textContent = preferences.voiceEnabled
+      ? "Asistente de voz activado"
+      : "Asistente de voz desactivado";
+  }
 }
+
+function setVisualMode(mode, announce = true) {
+  const visualModes = {
+    base: { theme: "light", colorMode: "none", label: "Modo base activado." },
+    dark: { theme: "dark", colorMode: "none", label: "Modo oscuro activado." },
+    "high-contrast": { theme: "high-contrast", colorMode: "none", label: "Alto contraste activado." },
+    protanopia: { theme: "light", colorMode: "protanopia", label: "Modo protanopia activado." },
+    deuteranopia: { theme: "light", colorMode: "deuteranopia", label: "Modo deuteranopia activado." },
+    tritanopia: { theme: "light", colorMode: "tritanopia", label: "Modo tritanopia activado." },
+    monochrome: { theme: "light", colorMode: "monochrome", label: "Modo monocromático activado." }
+  };
+
+  const selectedMode = visualModes[mode] || visualModes.base;
+  preferences.theme = selectedMode.theme;
+  preferences.colorMode = selectedMode.colorMode;
+  applyAccessibilityPreferences();
+
+  if (announce) {
+    toast(selectedMode.label);
+    speakText(selectedMode.label);
+  }
+}
+
+function setFontScale(fontScale, announce = true) {
+  if (!validFontScales.includes(fontScale)) return;
+
+  preferences.fontScale = fontScale;
+  applyAccessibilityPreferences();
+
+  if (announce) {
+    const messages = {
+      small: "Texto reducido.",
+      normal: "Tamaño de texto normal.",
+      large: "Texto aumentado.",
+      xlarge: "Texto en tamaño extra grande."
+    };
+
+    toast(messages[fontScale]);
+    speakText(messages[fontScale]);
+  }
+}
+
+function speakText(text) {
+  if (!preferences.voiceEnabled || !("speechSynthesis" in window) || !text) return;
+
+  window.speechSynthesis.cancel();
+
+  const message = new SpeechSynthesisUtterance(String(text));
+  message.lang = "es-CR";
+  message.rate = 0.95;
+  message.pitch = 1;
+  window.speechSynthesis.speak(message);
+}
+
+function setVoiceEnabled(enabled) {
+  if (!("speechSynthesis" in window)) {
+    toast("El asistente de voz no está disponible en este navegador.", "error");
+    return;
+  }
+
+  preferences.voiceEnabled = Boolean(enabled);
+  applyAccessibilityPreferences();
+
+  if (preferences.voiceEnabled) {
+    speakText("Asistente de voz activado.");
+    toast("Asistente de voz activado.");
+  } else {
+    window.speechSynthesis.cancel();
+    toast("Asistente de voz desactivado.");
+  }
+}
+
+function closeLoginAccessibilityPanel(returnFocus = true) {
+  const panel = $("#login-accessibility-panel");
+  const button = $("#login-accessibility-button");
+
+  if (!panel || !button) return;
+
+  panel.hidden = true;
+  button.setAttribute("aria-expanded", "false");
+
+  if (returnFocus) button.focus();
+}
+
+function toggleLoginAccessibilityPanel() {
+  const panel = $("#login-accessibility-panel");
+  const button = $("#login-accessibility-button");
+
+  if (!panel || !button) return;
+
+  const willOpen = panel.hidden;
+  panel.hidden = !willOpen;
+  button.setAttribute("aria-expanded", String(willOpen));
+
+  if (willOpen) {
+    panel.querySelector("button")?.focus();
+    speakText("Panel de accesibilidad abierto.");
+  }
+}
+
 function closeColorMenu() {
-  $("#color-menu").hidden = true;
-  $("#color-menu-button").setAttribute("aria-expanded", "false");
+  const menu = $("#color-menu");
+  const button = $("#color-menu-button");
+
+  if (menu) menu.hidden = true;
+  if (button) button.setAttribute("aria-expanded", "false");
 }
+
 function startVoiceSearch() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) { toast("El dictado de voz no está disponible en este navegador.", "error"); return; }
-  if (voiceRecognition) { voiceRecognition.stop(); return; }
+
+  if (!Recognition) {
+    toast("El dictado de voz no está disponible en este navegador.", "error");
+    return;
+  }
+
+  if (voiceRecognition) {
+    voiceRecognition.stop();
+    return;
+  }
+
   voiceRecognition = new Recognition();
   voiceRecognition.lang = "es-CR";
   voiceRecognition.interimResults = false;
   voiceRecognition.continuous = false;
+
   const button = $("#voice-search");
-  voiceRecognition.onstart = () => { button.classList.add("listening"); button.setAttribute("aria-pressed", "true"); button.setAttribute("aria-label", "Detener dictado de voz"); toast("Escuchando… Di lo que deseas buscar."); };
-  voiceRecognition.onresult = event => { const text = event.results[0][0].transcript.trim(); const input = $("#global-search"); input.value = text; input.dispatchEvent(new Event("input", { bubbles: true })); input.focus(); };
-  voiceRecognition.onerror = event => { if (event.error !== "aborted") toast(event.error === "not-allowed" ? "Permite el acceso al micrófono para usar el dictado." : "No pudimos reconocer la voz. Inténtalo de nuevo.", "error"); };
-  voiceRecognition.onend = () => { button.classList.remove("listening"); button.setAttribute("aria-pressed", "false"); button.setAttribute("aria-label", "Activar dictado de voz para buscar"); voiceRecognition = null; };
+
+  voiceRecognition.onstart = () => {
+    button?.classList.add("listening");
+    button?.setAttribute("aria-pressed", "true");
+    button?.setAttribute("aria-label", "Detener dictado de voz");
+    toast("Escuchando… Di lo que deseas buscar.");
+    speakText("Dictado activado.");
+  };
+
+  voiceRecognition.onresult = event => {
+    const text = event.results[0][0].transcript.trim();
+    const input = $("#global-search");
+
+    if (!input) return;
+
+    input.value = text;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  };
+
+  voiceRecognition.onerror = event => {
+    if (event.error !== "aborted") {
+      toast(
+        event.error === "not-allowed"
+          ? "Permite el acceso al micrófono para usar el dictado."
+          : "No pudimos reconocer la voz. Inténtalo de nuevo.",
+        "error"
+      );
+    }
+  };
+
+  voiceRecognition.onend = () => {
+    button?.classList.remove("listening");
+    button?.setAttribute("aria-pressed", "false");
+    button?.setAttribute("aria-label", "Activar dictado de voz para buscar");
+    voiceRecognition = null;
+  };
+
   voiceRecognition.start();
 }
 
@@ -256,28 +494,229 @@ async function openNotifications() {
 function closeTopMenus(){ $("#notification-panel").hidden=true;$("#notification-button").setAttribute("aria-expanded","false");$("#profile-menu").hidden=true;$("#profile-button").setAttribute("aria-expanded","false") }
 
 function buildNav(){ $("#nav").innerHTML=navItems.map(([view,iconName,label])=>`<button data-view="${view}"><span>${icon(iconName)}</span>${label}</button>`).join(""); }
-function showApp(){
-  state.session=getSession();$("#login-view").hidden=true;$("#app").hidden=false;
-  const name=`${state.session.firstName||"Recruiter"} ${state.session.lastName||""}`;$("#profile-name").textContent=name;
-  $("#profile-menu-name").textContent=name;
-  const image=state.session.image||`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=dbeafe&color=2563eb`;$("#profile-img").src=image;$("#top-avatar").src=image;
-  buildNav();setView((location.hash.slice(1) in config||location.hash==="#dashboard")?location.hash.slice(1):"dashboard");resetInactivity();
+function showApp() {
+  state.session = getSession();
+
+  if (!state.session?.accessToken) {
+    showLogin();
+    return;
+  }
+
+  closeLoginAccessibilityPanel(false);
+  $("#login-view").hidden = true;
+  $("#app").hidden = false;
+
+  const name = `${state.session.firstName || "Recruiter"} ${state.session.lastName || ""}`.trim();
+  $("#profile-name").textContent = name;
+  $("#profile-menu-name").textContent = name;
+
+  const image = state.session.image ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=dbeafe&color=2563eb`;
+
+  $("#profile-img").src = image;
+  $("#top-avatar").src = image;
+
+  buildNav();
+
+  const requestedView = location.hash.slice(1);
+  const initialView = requestedView in config || requestedView === "dashboard"
+    ? requestedView
+    : "dashboard";
+
+  setView(initialView);
+  resetInactivity();
 }
-function showLogin(){clearSession();state.session=null;$("#app").hidden=true;$("#login-view").hidden=false;$("#login-form").reset();$("#username").focus()}
+function showLogin() {
+  clearSession();
+  state.session = null;
+  clearTimeout(inactivityTimer);
+
+  $("#app").hidden = true;
+  $("#login-view").hidden = false;
+
+  const form = $("#login-form");
+  const errorElement = $("#login-error");
+
+  form.reset();
+  errorElement.textContent = "";
+  errorElement.hidden = true;
+
+  closeLoginAccessibilityPanel(false);
+  $("#username").focus();
+}
 let inactivityTimer;
 function resetInactivity(){if(!state.session)return;clearTimeout(inactivityTimer);inactivityTimer=setTimeout(()=>{showLogin();toast("La sesión se cerró por 30 minutos de inactividad.","error")},30*60*1000)}
 
-$("#login-form").addEventListener("submit",async event=>{event.preventDefault();const button=$("button[type=submit]",event.currentTarget),errorEl=$("#login-error"),data=new FormData(event.currentTarget);button.disabled=true;button.textContent="Ingresando...";errorEl.hidden=true;try{const session=await login(data.get("username").trim(),data.get("password"));saveSession({...session,lastActivity:Date.now()});showApp()}catch(error){errorEl.textContent=error.message;errorEl.hidden=false}finally{button.disabled=false;button.textContent="Iniciar sesión"}});
-$("#toggle-password").addEventListener("click",()=>{const input=$("#password"),show=input.type==="password";input.type=show?"text":"password";$("#toggle-password").setAttribute("aria-label",show?"Ocultar contraseña":"Mostrar contraseña")});
+function clearLoginError() {
+  const errorElement = $("#login-error");
+  errorElement.textContent = "";
+  errorElement.hidden = true;
+}
+
+function showLoginError(message) {
+  const errorElement = $("#login-error");
+  errorElement.textContent = message;
+  errorElement.hidden = false;
+  speakText(message);
+}
+
+function getFriendlyLoginError(error) {
+  const message = String(error?.message || "").toLowerCase();
+
+  if (
+    message.includes("failed to fetch") ||
+    message.includes("network") ||
+    message.includes("conexión")
+  ) {
+    return "No se pudo conectar con el servicio. Revisa tu conexión a Internet.";
+  }
+
+  if (message.includes("timeout") || message.includes("tiempo")) {
+    return "El servicio tardó demasiado en responder. Inténtalo nuevamente.";
+  }
+
+  if (
+    message.includes("invalid credentials") ||
+    message.includes("username or password") ||
+    message.includes("401")
+  ) {
+    return "El usuario o la contraseña son incorrectos.";
+  }
+
+  return error?.message || "No fue posible iniciar sesión. Inténtalo nuevamente.";
+}
+
+$("#login-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const username = $("#username").value.trim();
+  const password = $("#password").value;
+  const humanCheck = $("#human-check");
+  const button = $("#login-button") || $("button[type=submit]", event.currentTarget);
+  const buttonText = $("span", button);
+
+  clearLoginError();
+
+  if (!username && !password) {
+    showLoginError("Debes ingresar el usuario y la contraseña.");
+    $("#username").focus();
+    return;
+  }
+
+  if (!username) {
+    showLoginError("Debes ingresar el nombre de usuario.");
+    $("#username").focus();
+    return;
+  }
+
+  if (!password) {
+    showLoginError("Debes ingresar la contraseña.");
+    $("#password").focus();
+    return;
+  }
+
+  if (humanCheck && !humanCheck.checked) {
+    showLoginError("Confirma que eres una persona antes de continuar.");
+    humanCheck.focus();
+    return;
+  }
+
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  if (buttonText) buttonText.textContent = "Verificando...";
+  else button.textContent = "Verificando...";
+
+  try {
+    const session = await login(username, password);
+
+    if (!session?.accessToken) {
+      throw new Error("La respuesta de autenticación no contiene un token válido.");
+    }
+
+    saveSession({ ...session, lastActivity: Date.now() });
+    speakText("Sesión iniciada correctamente.");
+    showApp();
+  } catch (error) {
+    console.error("Error técnico durante el inicio de sesión:", error);
+    showLoginError(getFriendlyLoginError(error));
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    if (buttonText) buttonText.textContent = "Iniciar sesión";
+    else button.textContent = "Iniciar sesión";
+  }
+});
+
+$("#username").addEventListener("input", clearLoginError);
+$("#password").addEventListener("input", clearLoginError);
+$("#human-check")?.addEventListener("change", clearLoginError);
+
+$("#toggle-password").addEventListener("click", () => {
+  const passwordInput = $("#password");
+  const shouldShowPassword = passwordInput.type === "password";
+
+  passwordInput.type = shouldShowPassword ? "text" : "password";
+  $("#toggle-password").setAttribute(
+    "aria-label",
+    shouldShowPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+  );
+
+  speakText(shouldShowPassword ? "Contraseña visible." : "Contraseña oculta.");
+});
 $("#logout").addEventListener("click",()=>{showLogin();toast("Sesión cerrada correctamente.")});
 $("#open-menu").addEventListener("click",()=>{$("#sidebar").classList.add("open");$("#overlay").hidden=false});$("#close-menu").addEventListener("click",closeSidebar);$("#overlay").addEventListener("click",closeSidebar);
 $("#global-search").addEventListener("input",event=>{state.query=event.target.value;state.page=1;if(state.view!=="dashboard")(["offers","messaging","help","clientPortal"].includes(state.view)?render():renderModule())});
-$("#theme-light").addEventListener("click",()=>{preferences.theme="light";applyAccessibilityPreferences();toast("Modo claro activado.")});
-$("#theme-dark").addEventListener("click",()=>{preferences.theme="dark";applyAccessibilityPreferences();toast("Modo oscuro activado.")});
-$("#color-menu-button").addEventListener("click",()=>{const menu=$("#color-menu"),willOpen=menu.hidden;menu.hidden=!willOpen;$("#color-menu-button").setAttribute("aria-expanded",String(willOpen));if(willOpen)$("[data-color-mode]",menu).focus()});
-$("#color-menu").addEventListener("click",event=>{const button=event.target.closest("[data-color-mode]");if(!button)return;preferences.colorMode=button.dataset.colorMode;applyAccessibilityPreferences();closeColorMenu();toast(button.textContent.trim()==="Colores estándar"?"Colores estándar activados.":`Modo ${button.textContent.trim()} activado.`)});
-$("#voice-search").addEventListener("click",startVoiceSearch);
-$("#font-size").addEventListener("click",()=>{const scales=["normal","large","xlarge"],next=(scales.indexOf(preferences.fontScale)+1)%scales.length;preferences.fontScale=scales[next];applyAccessibilityPreferences();toast({normal:"Tamaño de texto restablecido.",large:"Texto aumentado.",xlarge:"Texto en tamaño extra grande."}[preferences.fontScale])});
+$("#theme-light").addEventListener("click", () => setVisualMode("base"));
+$("#theme-dark").addEventListener("click", () => setVisualMode("dark"));
+$("#color-menu-button").addEventListener("click", () => {
+  const menu = $("#color-menu");
+  const willOpen = menu.hidden;
+
+  menu.hidden = !willOpen;
+  $("#color-menu-button").setAttribute("aria-expanded", String(willOpen));
+  if (willOpen) $("[data-color-mode]", menu)?.focus();
+});
+$("#color-menu").addEventListener("click", event => {
+  const button = event.target.closest("[data-color-mode]");
+  if (!button) return;
+
+  const mode = button.dataset.colorMode === "none" ? "base" : button.dataset.colorMode;
+  setVisualMode(mode);
+  closeColorMenu();
+});
+$("#voice-search").addEventListener("click", startVoiceSearch);
+$("#font-size").addEventListener("click", () => {
+  const cycle = ["small", "normal", "large", "xlarge"];
+  const nextScale = cycle[(cycle.indexOf(preferences.fontScale) + 1) % cycle.length];
+  setFontScale(nextScale);
+});
+
+$("#login-accessibility-button")?.addEventListener("click", toggleLoginAccessibilityPanel);
+$("#login-accessibility-panel")?.addEventListener("click", event => event.stopPropagation());
+
+document.querySelectorAll("[data-login-theme]").forEach(button => {
+  button.addEventListener("click", () => setVisualMode(button.dataset.loginTheme));
+});
+
+document.querySelectorAll("[data-login-font-scale]").forEach(button => {
+  button.addEventListener("click", () => setFontScale(button.dataset.loginFontScale));
+});
+
+$("#login-voice-toggle")?.addEventListener("click", () => {
+  setVoiceEnabled(!preferences.voiceEnabled);
+});
+
+$("#username")?.addEventListener("focus", () => {
+  speakText("Campo de nombre de usuario.");
+});
+
+$("#password")?.addEventListener("focus", () => {
+  speakText("Campo de contraseña.");
+});
+
+$("#human-check")?.addEventListener("focus", () => {
+  speakText("Casilla para confirmar que eres una persona.");
+});
 $("#notification-button").addEventListener("click",openNotifications);
 $("#profile-button").addEventListener("click",()=>{const menu=$("#profile-menu"),open=menu.hidden;closeTopMenus();menu.hidden=!open;$("#profile-button").setAttribute("aria-expanded",String(open))});
 document.addEventListener("click",event=>{
@@ -313,8 +752,12 @@ document.addEventListener("click",event=>{
   if(target.dataset.helpCategory){state.query=target.dataset.helpCategory;$("#global-search").value=state.query;renderHelp()}
   if(target.dataset.helpArticle){const article=helpArticles.find(a=>a.title===target.dataset.helpArticle);openModal(article.title,`<p class="quote">${esc(article.text)}</p><p class="muted">Esta guía forma parte del Centro de Accesibilidad e Inclusión de TalentSync.</p><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Entendido</button></div>`,article.cat)}
 });
-document.addEventListener("pointerdown",event=>{if(!event.target.closest(".access-menu-wrap"))closeColorMenu();if(!event.target.closest(".notification-wrap")&&!event.target.closest(".avatar-button")&&!event.target.closest(".profile-menu"))closeTopMenus()});
-document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeColorMenu();closeTopMenus()}});
+document.addEventListener("pointerdown",event=>{
+  if(!event.target.closest(".access-menu-wrap"))closeColorMenu();
+  if(!event.target.closest(".notification-wrap")&&!event.target.closest(".avatar-button")&&!event.target.closest(".profile-menu"))closeTopMenus();
+  if(!event.target.closest("#login-accessibility-panel")&&!event.target.closest("#login-accessibility-button"))closeLoginAccessibilityPanel(false);
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeColorMenu();closeTopMenus();closeLoginAccessibilityPanel(false)}});
 document.addEventListener("submit",event=>{
   if(event.target.id==="record-form"){event.preventDefault();submitRecord(event.target)}
   if(event.target.id==="quick-task"){event.preventDefault();const title=new FormData(event.target).get("title");openForm("tasks");$("#field-todo").value=title}
