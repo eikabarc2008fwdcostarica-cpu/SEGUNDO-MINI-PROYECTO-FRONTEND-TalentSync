@@ -1,0 +1,3 @@
+"use strict";
+import{getSession}from"./api.js";
+export async function analyzeCV(file,vacancyId,candidateId){const body=new FormData();body.append("cv",file);body.append("vacancyId",String(vacancyId));body.append("candidateId",String(candidateId));const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);try{const response=await fetch("/api/analyze-cv",{method:"POST",body,signal:controller.signal,headers:{Authorization:`Bearer ${getSession()?.accessToken||""}`}}),data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||"No se pudo analizar el currículum.");return data}catch(error){if(error.name==="AbortError")throw new Error("El análisis superó el tiempo de espera.");throw error}finally{clearTimeout(timer)}}
