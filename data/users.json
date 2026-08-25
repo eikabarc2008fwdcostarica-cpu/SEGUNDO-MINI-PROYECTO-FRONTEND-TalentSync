@@ -1,0 +1,5 @@
+[
+  {"id":"usr-recruiter","username":"recruiter.demo","name":"Valeria Recruiter","firstName":"Valeria","lastName":"Recruiter","email":"recruiter.demo@talentsync.local","role":"recruiter","companyId":null,"company":"TalentSync","image":""},
+  {"id":"usr-candidate","username":"candidate.demo","name":"Camila Candidate","firstName":"Camila","lastName":"Candidate","email":"candidate.demo@talentsync.local","role":"candidate","companyId":"company-demo","company":"Candidatura activa","image":""},
+  {"id":"usr-company","username":"company.demo","name":"Daniel Company","firstName":"Daniel","lastName":"Company","email":"company.demo@talentsync.local","role":"company","companyId":"company-demo","company":"Nexa Solutions","image":""}
+]

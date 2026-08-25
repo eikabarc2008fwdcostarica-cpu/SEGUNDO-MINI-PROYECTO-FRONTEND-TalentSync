@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "conversationId": "usr-candidate--usr-recruiter",
+    "senderId": "usr-recruiter",
+    "receiverId": "usr-candidate",
+    "role": "recruiter",
+    "timestamp": "2026-08-25T21:39:41.294Z",
+    "read": false,
+    "message": "hola"
+  }
+]
