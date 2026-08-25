@@ -1,65 +1,112 @@
-# TalentSync
+# TalentSync Multipágina
 
-TalentSync es una aplicación web de gestión de empleabilidad para reclutadores. Incluye dashboard, candidatos, vacantes, empresas clientes, postulaciones, entrevistas y tareas en una interfaz responsive y accesible.
-
-## Tecnologías
-
-HTML5, CSS3, JavaScript vanilla con ES Modules, Node.js, Fetch API, DummyJSON y localStorage. No requiere frameworks ni dependencias de producción.
-
-## Estructura
-
-```text
-public/pages/index.html   Punto de entrada y estructura semántica
-public/styles/index.css  Sistema visual y diseño responsive
-public/js/index.js       Estado, vistas, eventos y CRUD
-public/js/api.js         Cliente HTTP y sesión
-server.js                Servidor estático con módulos nativos de Node
-```
+TalentSync es una plataforma administrativa de reclutamiento construida con HTML5, CSS3, JavaScript vanilla, ES Modules, Node.js, Fetch API, DummyJSON y localStorage. Cada área funcional tiene ahora su propio documento HTML; no utiliza routing SPA ni frameworks frontend.
 
 ## Instalación y ejecución
 
-Requiere Node.js 18 o superior. Ejecutar `npm start` y abrir `http://localhost:5173`. No hace falta instalar dependencias externas.
+Requiere Node.js 20 o superior.
 
-## Login y seguridad
+```bash
+npm install
+npm start
+```
 
-La autenticación usa `POST https://dummyjson.com/auth/login`. Credenciales demo: usuario `emilys`, contraseña `emilyspass`.
+Abrir `http://localhost:5173`. Credenciales de demostración: `emilys` / `emilyspass`.
 
-El token retornado se almacena en `localStorage`, se agrega como encabezado `Authorization: Bearer` y se elimina al cerrar sesión. La sesión se cierra después de 30 minutos sin actividad. No se incluyen secretos privados.
+## Mapa de páginas
 
-## API, módulos y CRUD
-
-| Módulo | Recurso DummyJSON |
+| Página | Función |
 |---|---|
-| Candidatos | `/users` |
-| Vacantes | `/products` |
-| Empresas | `/carts` |
-| Postulaciones | `/posts` |
-| Entrevistas | `/comments` |
-| Tareas | `/todos` |
+| `pages/index.html` | Login exclusivo |
+| `dashboard.html` | Resumen general |
+| `candidatos.html` | Gestión de candidatos |
+| `vacantes.html` | Gestión de vacantes |
+| `empresas.html` | Empresas clientes |
+| `postulaciones.html` | Pipeline de postulaciones |
+| `entrevistas.html` | Evaluaciones y Calendario Maestro |
+| `tareas.html` | Tareas diarias y progreso |
+| `ofertas.html` | Ofertas laborales a candidatos |
+| `mensajeria.html` | Conversaciones locales |
+| `ayuda.html` | Ayuda, accesibilidad e inclusión |
+| `analisis-cv.html` | Match explicable CV/vacante |
+| `seguimiento-cliente.html` | Portal de seguimiento del cliente |
 
-Cada módulo permite consultar, crear, ver, editar y eliminar registros con Fetch API. Las eliminaciones requieren confirmación. Hay búsqueda local, paginación, estados de carga/error/vacío, modales reutilizables y mensajes toast.
+Empresas abre `seguimiento-cliente.html?id=...`; Candidatos abre `mensajeria.html?candidateId=...` y `analisis-cv.html?candidateId=...`; Postulaciones puede enviar candidato y vacante mediante parámetros URL.
 
-## Vistas ampliadas e integraciones
+## Arquitectura
 
-- **Calendario Maestro:** se encuentra dentro de Entrevistas y alterna entre vista mensual y semanal. Permite navegar fechas, filtrar por reclutador o tipo y abrir cada evento en el modal existente.
-- **Gestión de Ofertas:** vincula candidatos de `/users` con vacantes de `/products`. Permite redactar, consultar, filtrar y actualizar el estado de propuestas laborales.
-- **Mensajería Directa:** se abre desde la navegación o desde la acción `Mensaje` de un candidato. Incluye conversaciones, plantillas rápidas y composición revisable antes de guardar.
-- **Portal del Cliente:** se abre mediante `Empresas → Ver seguimiento`. Resume procesos prioritarios y decisiones de avance, rechazo o feedback.
-- **Centro de Ayuda:** integra artículos operativos con el Centro de Accesibilidad e Inclusión; no duplica una página separada de accesibilidad.
-- **Notificaciones:** el botón de campana resume tareas pendientes, entrevistas próximas y ofertas que requieren revisión. El antiguo botón decorativo de seguridad fue eliminado y las opciones de cuenta se concentraron en el avatar y el logout.
+```text
+public/
+├── pages/
+│   ├── index.html
+│   ├── dashboard.html
+│   ├── candidatos.html
+│   ├── vacantes.html
+│   ├── empresas.html
+│   ├── postulaciones.html
+│   ├── entrevistas.html
+│   ├── tareas.html
+│   ├── ofertas.html
+│   ├── mensajeria.html
+│   ├── ayuda.html
+│   ├── analisis-cv.html
+│   └── seguimiento-cliente.html
+├── styles/css/styles.css
+└── js/
+    ├── common/
+    │   ├── auth.js
+    │   ├── layout.js
+    │   ├── notifications.js
+    │   ├── search.js
+    │   ├── ui.js
+    │   └── resource-page.js
+    ├── services/
+    │   ├── api.js
+    │   └── cv-api.js
+    └── pages/
+        ├── login.js
+        └── un módulo por página
+```
 
-Las rutas internas adicionales son `#offers`, `#messaging`, `#help` y `#clientPortal`. Calendario y Portal del Cliente permanecen integrados en sus módulos de origen.
+El layout común genera sidebar, topbar, perfil, búsqueda, notificaciones, logout, modal y toasts. La navegación contiene enlaces HTML reales y marca la página activa mediante `body[data-page]`.
 
-## Datos locales de demostración
+## Autenticación y sesión
 
-DummyJSON no dispone de ofertas laborales, mensajería ni decisiones del portal. Esos datos se guardan exclusivamente en `localStorage` bajo las claves `talentsync_offers`, `talentsync_chats` y `talentsync_client_actions`. No representan correos, SMS, mensajes o decisiones enviados a un servicio real.
+El login usa `POST /auth/login` de DummyJSON. La sesión, usuario, token y última actividad se comparten mediante `localStorage`. `auth.js` protege todas las páginas privadas y las redirige a `index.html` cuando no hay sesión válida. Después de 30 minutos sin actividad limpia la sesión. Logout funciona desde cualquier página.
 
-## Limitaciones de DummyJSON
+## Servicios compartidos y DummyJSON
 
-DummyJSON simula respuestas de `POST`, `PUT`, `PATCH` y `DELETE`, pero no persiste los cambios. TalentSync los conserva en memoria mientras la página sigue abierta; al recargar se recuperan los datos originales.
+`js/services/api.js` centraliza autorización, timeout y errores para:
+
+- Candidatos → `/users`
+- Vacantes → `/products`
+- Empresas → `/carts`
+- Postulaciones → `/posts`
+- Entrevistas → `/comments`
+- Tareas → `/todos`
+
+DummyJSON simula POST, PATCH y DELETE, pero no persiste definitivamente los cambios.
+
+## Datos locales
+
+Ofertas, conversaciones, decisiones del portal y resultados de CV se guardan en localStorage porque DummyJSON no ofrece esas entidades. No representan mensajes, contratos ni decisiones enviados a servicios reales.
+
+## Análisis de CV
+
+`POST /api/analyze-cv` recibe PDF o DOCX de hasta 5 MB, obtiene la vacante, extrae texto en memoria y devuelve un resultado JSON explicable. PDF Parse y Mammoth procesan el documento sin escribirlo en disco. El buffer se elimina después de extraer el texto.
+
+Sin configuración externa usa el analizador local explicable. Para un servicio de IA compatible con JSON, copiar `.env.example` como `.env` y definir `AI_API_URL`, `AI_API_KEY` y `AI_MODEL`. La clave permanece exclusivamente en Node.js.
+
+El porcentaje describe coincidencia documental; no es probabilidad de contratación. Atributos sensibles no participan y ninguna decisión se ejecuta automáticamente.
 
 ## Responsive y accesibilidad
 
-El diseño se adapta desde 320 px hasta escritorios amplios. En móvil usa sidebar desplegable, cards de una columna, tablas con desplazamiento interno y controles táctiles. Incluye HTML semántico, labels, foco visible, dialogs nativos, regiones ARIA y soporte para `prefers-reduced-motion`.
+El CSS global soporta escritorio, tablet y móvil desde 320 px. Incluye drawer móvil, tablas con scroll controlado, mensajería adaptable, calendario desplazable, labels, focus visible, dialogs accesibles, regiones ARIA y `prefers-reduced-motion`.
 
-La barra superior ofrece modo claro y oscuro, paletas para deuteranopia, protanopia y tritanopia, tres tamaños de texto y dictado por voz para el buscador. Estas preferencias se guardan localmente. El dictado depende de `SpeechRecognition` y del permiso de micrófono del navegador; funciona mejor en navegadores basados en Chromium.
+## Pruebas
+
+```bash
+npm test
+```
+
+Las pruebas verifican cálculo CV, páginas requeridas, IDs únicos, imports existentes y sintaxis de todos los módulos.

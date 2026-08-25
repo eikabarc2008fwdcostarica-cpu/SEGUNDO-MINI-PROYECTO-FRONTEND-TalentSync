@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js && node --check public/js/api.js && node --check public/js/index.js"
+    "test": "node --check server.js && node --check cv-analysis.js && node --test tests/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -22,5 +22,9 @@
     "url": "https://github.com/eikabarc2008fwdcostarica-cpu/SEGUNDO-MINI-PROYECTO-FRONTEND-TalentSync/issues"
   },
   "homepage": "https://github.com/eikabarc2008fwdcostarica-cpu/SEGUNDO-MINI-PROYECTO-FRONTEND-TalentSync#readme",
-  "dependencies": {}
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "mammoth": "^1.12.1",
+    "pdf-parse": "^2.4.5"
+  }
 }
