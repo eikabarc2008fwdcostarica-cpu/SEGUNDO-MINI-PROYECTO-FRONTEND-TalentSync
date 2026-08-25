@@ -599,6 +599,15 @@
         </div>
 
         <div class="top-actions">
+          <button
+            class="btn btn--primary header-publish-btn"
+            type="button"
+            data-create="vacancies"
+            aria-label="Publicar nueva vacante"
+          >
+            ＋ Publicar vacante
+          </button>
+
           <div
             class="accessibility-tools"
             aria-label="Herramientas de accesibilidad"
@@ -788,38 +797,103 @@
             </section>
           </div>
 
-          <button
-            id="profile-button"
-            class="avatar-button"
-            type="button"
-            aria-label="Abrir opciones de perfil"
-            aria-expanded="false"
-            aria-controls="profile-menu"
-          >
-            <img
-              id="top-avatar"
-              class="avatar"
-              alt="Avatar"
-            >
-          </button>
-
-          <div
-            id="profile-menu"
-            class="profile-menu"
-            hidden
-          >
-            <strong id="profile-menu-name">
-              Recruiter
-            </strong>
-
-            <small>Cuenta de reclutamiento</small>
-
+          <!-- Menú desplegable de usuario y acciones secundarias -->
+          <div class="header-menu-wrap">
             <button
+              id="profile-button"
+              class="avatar-button"
               type="button"
-              data-profile-logout
+              aria-label="Abrir menú de usuario y acciones"
+              aria-expanded="false"
+              aria-haspopup="true"
+              aria-controls="profile-menu"
+              title="Menú de usuario"
             >
-              Cerrar sesión
+              <img
+                id="top-avatar"
+                class="avatar"
+                alt="Avatar de usuario"
+              >
+              <svg
+                class="avatar-caret"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6"></path>
+              </svg>
             </button>
+
+            <div
+              id="profile-menu"
+              class="profile-menu header-dropdown-menu"
+              role="menu"
+              aria-label="Opciones de cuenta y acciones"
+              hidden
+            >
+              <div class="dropdown-profile-header">
+                <strong id="profile-menu-name">
+                  Recruiter
+                </strong>
+                <small class="muted">Recruitment Manager</small>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <div class="dropdown-actions">
+                <button
+                  class="btn btn--primary btn--full dropdown-action-btn"
+                  type="button"
+                  role="menuitem"
+                  data-create="vacancies"
+                >
+                  ＋ Publicar vacante
+                </button>
+
+                <button
+                  class="dropdown-item-btn"
+                  type="button"
+                  role="menuitem"
+                  data-view="tasks"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                  <span>Mis Tareas</span>
+                </button>
+
+                <button
+                  class="dropdown-item-btn"
+                  type="button"
+                  role="menuitem"
+                  data-view="help"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"></path>
+                  </svg>
+                  <span>Centro de Ayuda</span>
+                </button>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <button
+                class="dropdown-item-btn dropdown-logout-btn"
+                type="button"
+                role="menuitem"
+                data-profile-logout
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

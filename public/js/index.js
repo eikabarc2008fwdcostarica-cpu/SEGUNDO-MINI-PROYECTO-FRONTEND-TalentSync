@@ -491,7 +491,21 @@ async function openNotifications() {
     $("#notification-list").innerHTML=`<button data-view="tasks">${icon("check")}<span><strong>${pending} tareas pendientes</strong><small>Revisa las prioridades de hoy</small></span></button><button data-open-calendar>${icon("calendar")}<span><strong>${Math.min(interviews,5)} entrevistas próximas</strong><small>Consulta el Calendario Maestro</small></span></button><button data-view="offers">${icon("offer")}<span><strong>${offers} ofertas requieren revisión</strong><small>Seguimiento de propuestas pendientes</small></span></button>`;
   }catch(error){$("#notification-list").innerHTML=`<p class="form-error">${esc(error.message)}</p>`}
 }
-function closeTopMenus(){ $("#notification-panel").hidden=true;$("#notification-button").setAttribute("aria-expanded","false");$("#profile-menu").hidden=true;$("#profile-button").setAttribute("aria-expanded","false") }
+function closeTopMenus() {
+  const notifPanel = $("#notification-panel");
+  const notifButton = $("#notification-button");
+  const profileMenu = $("#profile-menu");
+  const profileButton = $("#profile-button");
+  const colorMenu = $("#color-menu");
+  const colorButton = $("#color-menu-button");
+
+  if (notifPanel) notifPanel.hidden = true;
+  if (notifButton) notifButton.setAttribute("aria-expanded", "false");
+  if (profileMenu) profileMenu.hidden = true;
+  if (profileButton) profileButton.setAttribute("aria-expanded", "false");
+  if (colorMenu) colorMenu.hidden = true;
+  if (colorButton) colorButton.setAttribute("aria-expanded", "false");
+}
 
 function buildNav(){ $("#nav").innerHTML=navItems.map(([view,iconName,label])=>`<button data-view="${view}"><span>${icon(iconName)}</span>${label}</button>`).join(""); }
 function showApp() {
@@ -717,57 +731,126 @@ $("#password")?.addEventListener("focus", () => {
 $("#human-check")?.addEventListener("focus", () => {
   speakText("Casilla para confirmar que eres una persona.");
 });
-$("#notification-button").addEventListener("click",openNotifications);
-$("#profile-button").addEventListener("click",()=>{const menu=$("#profile-menu"),open=menu.hidden;closeTopMenus();menu.hidden=!open;$("#profile-button").setAttribute("aria-expanded",String(open))});
-document.addEventListener("click",event=>{
-  const target=event.target.closest("button");if(!target)return;
-  if(target.dataset.view){closeTopMenus();setView(target.dataset.view)}
-  if(target.dataset.create)openForm(target.dataset.create);
-  if(target.dataset.closeModal!==undefined)closeModal();
-  if(target.dataset.closeNotifications!==undefined)closeTopMenus();
-  if(target.dataset.profileLogout!==undefined){closeTopMenus();showLogin();toast("Sesión cerrada correctamente.")}
-  if(target.dataset.page){state.page=Number(target.dataset.page);renderModule()}
-  if(target.dataset.retry!==undefined)render();
-  if(target.dataset.clearSearch!==undefined){state.query="";$("#global-search").value="";renderModule()}
-  if(target.dataset.action==="view")openDetails(Number(target.dataset.id));
-  if(target.dataset.action==="edit")openForm(state.view,Number(target.dataset.id));
-  if(target.dataset.action==="delete")confirmDelete(Number(target.dataset.id));
-  if(target.dataset.confirmDelete)removeRecord(Number(target.dataset.confirmDelete),target);
-  if(target.dataset.interviewMode){state.interviewMode=target.dataset.interviewMode;renderModule()}
-  if(target.dataset.calendarMode){state.calendarMode=target.dataset.calendarMode;renderCalendar()}
-  if(target.dataset.calendarMove){const amount=Number(target.dataset.calendarMove);state.calendarMode==="month"?state.calendarDate.setMonth(state.calendarDate.getMonth()+amount):state.calendarDate.setDate(state.calendarDate.getDate()+amount*7);renderCalendar()}
-  if(target.dataset.calendarEvent){const item=calendarEvents().find(e=>e.id===Number(target.dataset.calendarEvent));openModal(item.type,`<div class="detail-list"><div class="detail-row"><small>Candidato</small><strong>${esc(item.title)}</strong></div><div class="detail-row"><small>Fecha y hora</small><strong>${item.date.toLocaleString("es-CR")}</strong></div><div class="detail-row"><small>Reclutador</small><strong>${esc(item.recruiter)}</strong></div><div class="detail-row"><small>Detalle</small><strong>${esc(item.detail)}</strong></div></div><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Cerrar</button></div>`,"Calendario Maestro")}
-  if(target.dataset.openCalendar!==undefined){closeTopMenus();state.interviewMode="calendar";setView("interviews")}
-  if(target.dataset.messageCandidate){state.activeChat=Number(target.dataset.messageCandidate);state.chatMobileOpen=true;setView("messaging")}
-  if(target.dataset.chat){state.activeChat=Number(target.dataset.chat);state.chatMobileOpen=true;renderMessaging()}
-  if(target.dataset.chatBack!==undefined){state.chatMobileOpen=false;renderMessaging()}
-  if(target.dataset.chatFilter){state.chatFilter=target.dataset.chatFilter;renderMessaging()}
-  if(target.dataset.quickMessage){const templates={"Solicitar CV":"Hola, ¿podrías compartirnos tu CV actualizado para continuar con el proceso?","Agendar Entrevista":"Hola, nos gustaría coordinar una entrevista contigo. ¿Qué disponibilidad tienes esta semana?","Rechazo Cordial":"Agradecemos mucho tu interés y el tiempo dedicado. En esta ocasión continuaremos con otros perfiles."};$("#message-text").value=templates[target.dataset.quickMessage];$("#message-text").focus()}
-  if(target.dataset.newOffer!==undefined)openOfferForm();
-  if(target.dataset.offerFilter){state.offerFilter=target.dataset.offerFilter;renderOffers()}
-  if(target.dataset.offerView){const offer=getOffers().find(o=>o.id===Number(target.dataset.offerView)),user=state.data.candidates.find(u=>u.id===offer.candidateId),vacancy=state.data.vacancies.find(v=>v.id===offer.vacancyId);openModal("Detalle de oferta",`<div class="detail-list"><div class="detail-row"><small>Candidato</small><strong>${esc(user.firstName)} ${esc(user.lastName)}</strong></div><div class="detail-row"><small>Vacante</small><strong>${esc(vacancy.title)}</strong></div><div class="detail-row"><small>Estado</small><strong>${offer.status}</strong></div></div><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Cerrar</button></div>`,"Gestión de Ofertas")}
-  if(target.dataset.offerStatus){const offers=getOffers(),offer=offers.find(o=>o.id===Number(target.dataset.offerStatus)),statuses=["Pendiente","Firmada","Rechazada"];offer.status=statuses[(statuses.indexOf(offer.status)+1)%statuses.length];saveOffers(offers);renderOffers();toast("Estado de oferta actualizado localmente.")}
-  if(target.dataset.clientPortal){state.clientCompany=Number(target.dataset.clientPortal);setView("clientPortal")}
-  if(target.dataset.clientAction){const actions=JSON.parse(localStorage.getItem("talentsync_client_actions")||"{}");actions[target.dataset.id]=target.dataset.clientAction;localStorage.setItem("talentsync_client_actions",JSON.stringify(actions));renderClientPortal();toast("Decisión guardada localmente.")}
-  if(target.dataset.helpCategory){state.query=target.dataset.helpCategory;$("#global-search").value=state.query;renderHelp()}
-  if(target.dataset.helpArticle){const article=helpArticles.find(a=>a.title===target.dataset.helpArticle);openModal(article.title,`<p class="quote">${esc(article.text)}</p><p class="muted">Esta guía forma parte del Centro de Accesibilidad e Inclusión de TalentSync.</p><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Entendido</button></div>`,article.cat)}
+$("#notification-button").addEventListener("click", openNotifications);
+
+$("#profile-button").addEventListener("click", () => {
+  const menu = $("#profile-menu");
+  const button = $("#profile-button");
+  if (!menu) return;
+  const willOpen = menu.hidden;
+  closeTopMenus();
+  if (willOpen) {
+    menu.hidden = false;
+    button?.setAttribute("aria-expanded", "true");
+    menu.querySelector("button")?.focus();
+  }
 });
-document.addEventListener("pointerdown",event=>{
-  if(!event.target.closest(".access-menu-wrap"))closeColorMenu();
-  if(!event.target.closest(".notification-wrap")&&!event.target.closest(".avatar-button")&&!event.target.closest(".profile-menu"))closeTopMenus();
-  if(!event.target.closest("#login-accessibility-panel")&&!event.target.closest("#login-accessibility-button"))closeLoginAccessibilityPanel(false);
+
+document.addEventListener("click", event => {
+  const target = event.target.closest("button");
+  if (!target) return;
+  if (target.dataset.view) { closeTopMenus(); setView(target.dataset.view); }
+  if (target.dataset.create) { closeTopMenus(); openForm(target.dataset.create); }
+  if (target.dataset.closeModal !== undefined) closeModal();
+  if (target.dataset.closeNotifications !== undefined) closeTopMenus();
+  if (target.dataset.profileLogout !== undefined) { closeTopMenus(); showLogin(); toast("Sesión cerrada correctamente."); }
+  if (target.dataset.page) { state.page = Number(target.dataset.page); renderModule(); }
+  if (target.dataset.retry !== undefined) render();
+  if (target.dataset.clearSearch !== undefined) { state.query = ""; $("#global-search").value = ""; renderModule(); }
+  if (target.dataset.action === "view") openDetails(Number(target.dataset.id));
+  if (target.dataset.action === "edit") openForm(state.view, Number(target.dataset.id));
+  if (target.dataset.action === "delete") confirmDelete(Number(target.dataset.id));
+  if (target.dataset.confirmDelete) removeRecord(Number(target.dataset.confirmDelete), target);
+  if (target.dataset.interviewMode) { state.interviewMode = target.dataset.interviewMode; renderModule(); }
+  if (target.dataset.calendarMode) { state.calendarMode = target.dataset.calendarMode; renderCalendar(); }
+  if (target.dataset.calendarMove) { const amount = Number(target.dataset.calendarMove); state.calendarMode === "month" ? state.calendarDate.setMonth(state.calendarDate.getMonth() + amount) : state.calendarDate.setDate(state.calendarDate.getDate() + amount * 7); renderCalendar(); }
+  if (target.dataset.calendarEvent) { const item = calendarEvents().find(e => e.id === Number(target.dataset.calendarEvent)); openModal(item.type, `<div class="detail-list"><div class="detail-row"><small>Candidato</small><strong>${esc(item.title)}</strong></div><div class="detail-row"><small>Fecha y hora</small><strong>${item.date.toLocaleString("es-CR")}</strong></div><div class="detail-row"><small>Reclutador</small><strong>${esc(item.recruiter)}</strong></div><div class="detail-row"><small>Detalle</small><strong>${esc(item.detail)}</strong></div></div><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Cerrar</button></div>`, "Calendario Maestro"); }
+  if (target.dataset.openCalendar !== undefined) { closeTopMenus(); state.interviewMode = "calendar"; setView("interviews"); }
+  if (target.dataset.messageCandidate) { state.activeChat = Number(target.dataset.messageCandidate); state.chatMobileOpen = true; setView("messaging"); }
+  if (target.dataset.chat) { state.activeChat = Number(target.dataset.chat); state.chatMobileOpen = true; renderMessaging(); }
+  if (target.dataset.chatBack !== undefined) { state.chatMobileOpen = false; renderMessaging(); }
+  if (target.dataset.chatFilter) { state.chatFilter = target.dataset.chatFilter; renderMessaging(); }
+  if (target.dataset.quickMessage) { const templates = { "Solicitar CV": "Hola, ¿podrías compartirnos tu CV actualizado para continuar con el proceso?", "Agendar Entrevista": "Hola, nos gustaría coordinar una entrevista contigo. ¿Qué disponibilidad tienes esta semana?", "Rechazo Cordial": "Agradecemos mucho tu interés y el tiempo dedicado. En esta ocasión continuaremos con otros perfiles." }; $("#message-text").value = templates[target.dataset.quickMessage]; $("#message-text").focus(); }
+  if (target.dataset.newOffer !== undefined) openOfferForm();
+  if (target.dataset.offerFilter) { state.offerFilter = target.dataset.offerFilter; renderOffers(); }
+  if (target.dataset.offerView) { const offer = getOffers().find(o => o.id === Number(target.dataset.offerView)), user = state.data.candidates.find(u => u.id === offer.candidateId), vacancy = state.data.vacancies.find(v => v.id === offer.vacancyId); openModal("Detalle de oferta", `<div class="detail-list"><div class="detail-row"><small>Candidato</small><strong>${esc(user.firstName)} ${esc(user.lastName)}</strong></div><div class="detail-row"><small>Vacante</small><strong>${esc(vacancy.title)}</strong></div><div class="detail-row"><small>Estado</small><strong>${offer.status}</strong></div></div><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Cerrar</button></div>`, "Gestión de Ofertas"); }
+  if (target.dataset.offerStatus) { const offers = getOffers(), offer = offers.find(o => o.id === Number(target.dataset.offerStatus)), statuses = ["Pendiente", "Firmada", "Rechazada"]; offer.status = statuses[(statuses.indexOf(offer.status) + 1) % statuses.length]; saveOffers(offers); renderOffers(); toast("Estado de oferta actualizado localmente."); }
+  if (target.dataset.clientPortal) { state.clientCompany = Number(target.dataset.clientPortal); setView("clientPortal"); }
+  if (target.dataset.clientAction) { const actions = JSON.parse(localStorage.getItem("talentsync_client_actions") || "{}"); actions[target.dataset.id] = target.dataset.clientAction; localStorage.setItem("talentsync_client_actions", JSON.stringify(actions)); renderClientPortal(); toast("Decisión guardada localmente."); }
+  if (target.dataset.helpCategory) { state.query = target.dataset.helpCategory; $("#global-search").value = state.query; renderHelp(); }
+  if (target.dataset.helpArticle) { const article = helpArticles.find(a => a.title === target.dataset.helpArticle); openModal(article.title, `<p class="quote">${esc(article.text)}</p><p class="muted">Esta guía forma parte del Centro de Accesibilidad e Inclusión de TalentSync.</p><div class="modal-actions"><button class="btn btn--primary" data-close-modal>Entendido</button></div>`, article.cat); }
 });
-document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeColorMenu();closeTopMenus();closeLoginAccessibilityPanel(false)}});
-document.addEventListener("submit",event=>{
-  if(event.target.id==="record-form"){event.preventDefault();submitRecord(event.target)}
-  if(event.target.id==="quick-task"){event.preventDefault();const title=new FormData(event.target).get("title");openForm("tasks");$("#field-todo").value=title}
-  if(event.target.id==="offer-form"){event.preventDefault();const data=Object.fromEntries(new FormData(event.target)),offers=getOffers();offers.unshift({id:Date.now(),candidateId:Number(data.candidateId),vacancyId:Number(data.vacancyId),status:"Pendiente",date:new Date().toISOString(),note:data.note});saveOffers(offers);closeModal();renderOffers();toast("Oferta guardada localmente.")}
-  if(event.target.id==="message-form"){event.preventDefault();const text=new FormData(event.target).get("message").trim(),chats=getChats();chats[state.activeChat]||=[];chats[state.activeChat].push({from:"recruiter",text,date:new Date().toISOString()});saveChats(chats);renderMessaging();toast("Mensaje guardado en esta demostración local.")}
+
+document.addEventListener("pointerdown", event => {
+  if (!event.target.closest(".access-menu-wrap")) closeColorMenu();
+  if (!event.target.closest(".notification-wrap") && !event.target.closest(".header-menu-wrap")) closeTopMenus();
+  if (!event.target.closest("#login-accessibility-panel") && !event.target.closest("#login-accessibility-button")) closeLoginAccessibilityPanel(false);
 });
-document.addEventListener("input",event=>{if(event.target.id==="help-query"){state.query=event.target.value;$("#global-search").value=state.query;renderHelp();const input=$("#help-query");input.focus();input.setSelectionRange(input.value.length,input.value.length)}});
-document.addEventListener("change",async event=>{if(event.target.id==="recruiter-filter"){state.calendarFilters.recruiter=event.target.value;renderCalendar()}if(event.target.id==="event-type-filter"){state.calendarFilters.type=event.target.value;renderCalendar()}if(event.target.dataset.toggleTask){const id=Number(event.target.dataset.toggleTask),item=state.data.tasks.find(t=>t.id===id),completed=event.target.checked;try{await updateItem("todos",id,{completed});item.completed=completed;renderTasks(filteredData());toast("Tarea actualizada.")}catch(error){event.target.checked=!completed;toast(error.message,"error")}}});
-modal.addEventListener("click",event=>{if(event.target===modal)closeModal()});
-window.addEventListener("auth:expired",showLogin);window.addEventListener("offline",()=>{$("#offline").hidden=false});window.addEventListener("online",()=>{$("#offline").hidden=true;toast("Conexión restablecida.")});["pointerdown","keydown","scroll"].forEach(name=>window.addEventListener(name,resetInactivity,{passive:true}));
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeColorMenu();
+    closeTopMenus();
+    closeLoginAccessibilityPanel(false);
+  }
+});
+
+document.addEventListener("submit", event => {
+  if (event.target.id === "record-form") { event.preventDefault(); submitRecord(event.target); }
+  if (event.target.id === "quick-task") { event.preventDefault(); const title = new FormData(event.target).get("title"); openForm("tasks"); $("#field-todo").value = title; }
+  if (event.target.id === "offer-form") { event.preventDefault(); const data = Object.fromEntries(new FormData(event.target)), offers = getOffers(); offers.unshift({ id: Date.now(), candidateId: Number(data.candidateId), vacancyId: Number(data.vacancyId), status: "Pendiente", date: new Date().toISOString(), note: data.note }); saveOffers(offers); closeModal(); renderOffers(); toast("Oferta guardada localmente."); }
+  if (event.target.id === "message-form") { event.preventDefault(); const text = new FormData(event.target).get("message").trim(), chats = getChats(); chats[state.activeChat] ||= []; chats[state.activeChat].push({ from: "recruiter", text, date: new Date().toISOString() }); saveChats(chats); renderMessaging(); toast("Mensaje guardado en esta demostración local."); }
+});
+
+document.addEventListener("input", event => {
+  if (event.target.id === "help-query") {
+    state.query = event.target.value;
+    $("#global-search").value = state.query;
+    renderHelp();
+    const input = $("#help-query");
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+});
+
+document.addEventListener("change", async event => {
+  if (event.target.id === "recruiter-filter") { state.calendarFilters.recruiter = event.target.value; renderCalendar(); }
+  if (event.target.id === "event-type-filter") { state.calendarFilters.type = event.target.value; renderCalendar(); }
+  if (event.target.dataset.toggleTask) {
+    const id = Number(event.target.dataset.toggleTask), item = state.data.tasks.find(t => t.id === id), completed = event.target.checked;
+    try {
+      await updateItem("todos", id, { completed });
+      item.completed = completed;
+      renderTasks(filteredData());
+      toast("Tarea actualizada.");
+    } catch (error) {
+      event.target.checked = !completed;
+      toast(error.message, "error");
+    }
+  }
+});
+
+modal.addEventListener("click", event => { if (event.target === modal) closeModal(); });
+
+window.addEventListener("auth:expired", showLogin);
+window.addEventListener("offline", () => { $("#offline").hidden = false; });
+window.addEventListener("online", () => { $("#offline").hidden = true; toast("Conexión restablecida."); });
+["pointerdown", "keydown", "scroll"].forEach(name => window.addEventListener(name, resetInactivity, { passive: true }));
+
+let zoomResizeDebounce;
+function handleViewportZoomChange() {
+  clearTimeout(zoomResizeDebounce);
+  zoomResizeDebounce = setTimeout(() => {
+    closeTopMenus();
+    if (window.innerWidth > 992) {
+      closeSidebar();
+    }
+  }, 100);
+}
+window.addEventListener("resize", handleViewportZoomChange, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", handleViewportZoomChange, { passive: true });
+}
 
 applyAccessibilityPreferences();
-if(state.session?.accessToken)showApp();else showLogin();
+if (state.session?.accessToken) showApp(); else showLogin();
