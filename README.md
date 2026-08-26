@@ -71,6 +71,13 @@ El banner utiliza tres SVG propios en `public/imgs`, rota cada seis segundos y d
 
 Empresas, Postulaciones y Vacantes reutilizan la información y acciones existentes con la jerarquía visual de las referencias proporcionadas: métricas, cards corporativas, pipeline y tarjetas de progreso. La marca permanece TalentSync y no se copiaron nombres, logos ni fotografías de las referencias.
 
+## Documentación y Recursos
+
+- 📄 **[PITCH_COMERCIAL_TALENTSYNC.md](file:///docs/PITCH_COMERCIAL_TALENTSYNC.md)**: Dossier comercial completo y framework de ventas B2B para empresas, consultoras de selección y directores de talento (Elevator pitches, matriz de problemas/solución PAS, cálculo de ROI, demo script de 10 min y manejo de objeciones).
+- 📘 **[Agent.md](file:///Agent.md)**: Especificación técnica y framework de gobernanza arquitectónica de nivel Principal/Staff Frontend Architect.
+- 🤝 **[CONTRIBUTING.md](file:///CONTRIBUTING.md)**: Guía de contribución, estándares de código, flujo de Git y plantilla oficial de Pull Request.
+- 📜 **[CHANGELOG.md](file:///CHANGELOG.md)**: Registro histórico de cambios y versiones del proyecto (SemVer).
+
 ## Pruebas
 
 ```bash

@@ -46,28 +46,31 @@ Todo código aportado al repositorio debe cumplir estrictamente con los siguient
 
 ### 3.1 Estructura y Modularidad
 ▪ **Respeto a la Jerarquía de Carpetas**:
-  ↳ `/services`: Contiene exclusivamente la comunicación con la API (`fetch`), gestión de almacenamiento y transformación de datos.
-  ↳ `/pages`: Contiene las páginas HTML semánticas y sus controladores directos.
-  ↳ `/styles`: Contiene las hojas de estilo organizadas en base, componentes y layouts.
-  ↳ `/js/components`: Contiene las factorías de renderizado y lógica de presentación.
-  ↳ `/js/utils`: Contiene funciones puras e independientes (validaciones, formateadores, saneamiento XSS).
+  ↳ `/public/pages`: Páginas HTML individuales para cada módulo (`dashboard.html`, `candidatos.html`, `vacantes.html`, `analisis-cv.html`, `seguimiento-cliente.html`, etc.).
+  ↳ `/public/js/common`: Controladores transversales (accesibilidad, autenticación, layout, búsqueda global, notificaciones, sonido, traducciones).
+  ↳ `/public/js/pages`: Scripts específicos por cada página multipágina.
+  ↳ `/public/js/services`: Clientes de comunicación HTTP (`api.js`, `cv-api.js`).
+  ↳ `/public/styles`: Hojas de estilo modulares en CSS3 nativo.
+  ↳ `/docs`: Documentación técnica, planificación y dossiers comerciales (`PITCH_COMERCIAL_TALENTSYNC.md`).
+  ↳ `/data`: Persistencia de usuarios y mensajes seguros administrados por Node.
+  ↳ `/tests`: Pruebas de integración, sintaxis y estructura multipágina.
 ▪ **Separación de Responsabilidades**: Prohibido acoplar llamadas de red dentro de funciones de renderizado o manipular el DOM desde la capa de servicios.
 
 ### 3.2 Estilos (CSS3 Puro)
 ▪ **Metodología BEM Obligatoria**: Nomenclatura rigurosa de selectores (`.bloque__elemento--modificador`). Prohibido anidar selectores de más de dos niveles de profundidad.
 ▪ **Variables Globales (`:root`)**: Usar las variables de diseño declaradas para espaciados, tipografías, sombras y z-index.
 ▪ **Cero Estilos en Línea**: Queda terminantemente prohibido el uso del atributo `style="..."` en el marcado HTML. Cualquier variación visual debe gestionarse a través de clases CSS o propiedades de variables dinámicas.
-▪ **Mobile-First**: Toda maquetación debe realizarse inicialmente para móviles y adaptarse progresivamente mediante Media Queries `min-width`.
+▪ **Mobile-First y Accesibilidad**: Toda maquetación debe realizarse inicialmente para móviles y adaptarse progresivamente mediante Media Queries `min-width`, garantizando compatibilidad con alto contraste, daltonismo y `prefers-reduced-motion`.
 
 ### 3.3 Lógica y JavaScript (ES6+ Estricto)
 ▪ **JavaScript Vanilla Puro**: Modo estricto (`"use strict"`), modularización nativa con `import` y `export`.
 ▪ **Manejo Asíncrono Robusto**:
   ↳ Toda operación de I/O o red debe implementarse con sintaxis `async` / `await`.
   ↳ Toda llamada a servicios debe estar encapsulada en bloques `try / catch`, propagando o notificando errores mediante la infraestructura centralizada de la aplicación.
-▪ **Prevención de Vulnerabilidades**: Prohibida la inserción de contenido dinámico no sanitizado en `innerHTML`. Usar funciones de escape o inserción mediante `textContent` / `setAttribute`.
+▪ **Prevención de Vulnerabilidades**: Prohibida la inserción de contenido dinámico no sanitizado en `innerHTML`. Usar funciones de escape (`esc()`) o inserción mediante `textContent` / `setAttribute`.
 
 ### 3.4 Prohibición de Dependencias Externas de UI
-▪ **Frontend Puro**: No se admiten frameworks o librerías de interfaz de usuario externas (tales como TailwindCSS, Bootstrap, React, Vue, jQuery). Toda la interactividad y presentación debe construirse con estándares nativos del navegador.
+▪ **Frontend Puro**: No se admiten frameworks o librerías de interfaz de usuario externas (tales como TailwindCSS, Bootstrap, React, Vue, jQuery). Toda la interactividad y presentación debe construirse con estándares nativos del navegador y Node.js para el backend.
 
 ---
 
@@ -76,24 +79,42 @@ Todo código aportado al repositorio debe cumplir estrictamente con los siguient
 Una vez completado el desarrollo de tu aporte, sigue este procedimiento para someterlo a revisión:
 
 1. ❯ **Commits Claros y Atómicos**:
-   ↳ Realiza commits frecuentes con mensajes concisos y descriptivos en imperativo (ej. `git commit -m "feat(candidatos): agregar barra de busqueda con debounce"` o `git commit -m "fix(auth): corregir redireccion tras expiracion de token"`).
+   ↳ Realiza commits frecuentes con mensajes concisos y descriptivos en imperativo (ej. `git commit -m "feat(candidatos): agregar barra de busqueda con debounce"` o `git commit -m "docs: agregar framework de pitch comercial"`).
 
-2. ❯ **Verificación Local**:
-   ↳ Asegúrate de que la aplicación carga sin errores en la consola del navegador.
-   ↳ Ten presente que la API de **DummyJSON** opera en modo simulado: verifica que las mutaciones de datos reflejen los cambios en la UI y en el estado en memoria de manera correcta.
+2. ❯ **Verificación Local Obligatoria**:
+   ↳ Ejecuta la suite de pruebas del proyecto:
+   ```bash
+   npm test
+   ```
+   ↳ Comprueba que el servidor arranca y responde correctamente en `http://localhost:5173`:
+   ```bash
+   npm start
+   ```
+   ↳ Verifica que la consola del navegador permanezca libre de errores no controlados.
 
 3. ❯ **Enviar la Rama al Repositorio Remoto**:
    ```bash
-   git push origin feature/nueva-vista
+   git push origin feature/nombre-funcionalidad
    ```
 
-4. ❯ **Apertura y Descripción del Pull Request**:
-   ↳ Abre el Pull Request desde tu bifurcación hacia la rama principal del repositorio base.
-   ↳ Completa la descripción del PR detallando:
-     ▪ Resumen de los cambios implementados.
-     ▪ Módulos o archivos modificados.
-     ▪ Pasos para probar y verificar el comportamiento localmente.
-   ↳ El equipo revisará el código propuesto y brindará retroalimentación técnica o aprobará la integración.
+4. ❯ **Plantilla y Apertura de Pull Request**:
+   ↳ Al abrir el PR en GitHub/GitLab, utiliza la siguiente plantilla estandarizada:
+
+   ```markdown
+   ## ¿Qué hace este PR?
+   Breve resumen del cambio en 1-2 frases.
+
+   ## ¿Por qué?
+   El problema o necesidad que resuelve.
+
+   ## ¿Cómo se probó?
+   Pasos para verificar que funciona.
+
+   ## Checklist
+   - [ ] El código compila / corre sin errores
+   - [ ] Los commits siguen el estándar
+   - [ ] Se actualizó la documentación si aplica
+   ```
 
 ---
 
