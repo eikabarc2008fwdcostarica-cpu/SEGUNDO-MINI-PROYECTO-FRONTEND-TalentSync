@@ -44,9 +44,34 @@ function localTalentSyncReply(message,user){
   return "Puedo orientarte sobre ese tema dentro de TalentSync. Indica si necesitas consultar, crear o dar seguimiento a una vacante, postulación, entrevista, oferta, candidato o empresa.";
 }
 
+function talentSyncMessageInScope(message){
+  const text=message.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  return ["empleo","trabajo","vacante","puesto","candidato","curriculum","cv","postul","aplicar","empresa","reclut","entrevista","oferta","contrat","talentsync","perfil","tarea","mensaje","salario","habilidad","experiencia","dashboard","panel","notificacion","idioma","accesibilidad","inicio de sesion","contrasena","cuenta","hola","buenas","ayuda","gracias"].some(term=>text.includes(term));
+}
+
 async function handleChat(request,response){
   const currentUser=await authenticatedUser(request);if(!currentUser)return sendJSON(response,401,{message:"Inicia sesión para utilizar el asistente."});
-  try{const {message}=await readJSON(request);if(typeof message!=="string"||!message.trim()||message.length>1200)return sendJSON(response,400,{message:"Escribe un mensaje válido de hasta 1200 caracteres."});return sendJSON(response,200,{reply:localTalentSyncReply(message,currentUser),engine:"local-talentsync"})}catch(error){return sendJSON(response,400,{message:/grande|JSON/.test(error.message)?error.message:"No se pudo procesar el mensaje."})}
+  try{
+    const {message,language="es"}=await readJSON(request);
+    if(typeof message!=="string"||!message.trim()||message.length>1200)return sendJSON(response,400,{message:"Escribe un mensaje válido de hasta 1200 caracteres."});
+    if(!talentSyncMessageInScope(message))return sendJSON(response,200,{reply:localTalentSyncReply(message,currentUser),engine:"local-scope-filter"});
+    const geminiKey=process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY;
+    const geminiModel=process.env.GEMINI_MODEL||"gemini-3.1-flash-lite";
+    if(!configuredSecret(geminiKey))return sendJSON(response,200,{reply:localTalentSyncReply(message,currentUser),engine:"local-talentsync"});
+    try{
+      const role={recruiter:"reclutador",company:"reclutador de empresa",candidate:"persona candidata"}[currentUser.role]||"usuario";
+      const endpoint=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`;
+      const remote=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":geminiKey},body:JSON.stringify({system_instruction:{parts:[{text:`Eres el asistente oficial de TalentSync para un ${role}. Responde en el idioma ${language}. Tu único alcance es TalentSync y temas laborales: empleo, vacantes, empresas, candidatos, CV, postulaciones, entrevistas, ofertas, contratación y uso de la plataforma. Rechaza brevemente cualquier tema externo. No inventes datos de la cuenta, no solicites secretos, no infieras atributos sensibles y nunca tomes decisiones de contratación. Ofrece orientación breve, práctica y segura.`}]},contents:[{role:"user",parts:[{text:message.trim()}]}],generationConfig:{temperature:.2,maxOutputTokens:350}}),signal:AbortSignal.timeout(20000)});
+      const data=await readRemoteJSON(remote,"Gemini");
+      if(!remote.ok)throw new Error(data.error?.message||`Gemini respondió con estado ${remote.status}.`);
+      const reply=data.candidates?.[0]?.content?.parts?.map(part=>part.text||"").join("").trim();
+      if(!reply)throw new Error("Gemini no generó una respuesta utilizable.");
+      return sendJSON(response,200,{reply,engine:"gemini",model:geminiModel});
+    }catch(error){
+      console.warn(`Asistente Gemini: ${error.message}`);
+      return sendJSON(response,200,{reply:localTalentSyncReply(message,currentUser),engine:"local-fallback"});
+    }
+  }catch(error){return sendJSON(response,400,{message:/grande|JSON/.test(error.message)?error.message:"No se pudo procesar el mensaje."})}
 }
 
 function parseCVUpload(request) {
@@ -110,7 +135,7 @@ createServer(async (request, response) => {
     if(request.method==="POST"&&url.pathname==="/api/messages"){const message=await createMessage(user,await readJSON(request));return message?sendJSON(response,201,{message}):sendJSON(response,400,{message:"Destinatario o mensaje no válido."})}
     const readMatch=url.pathname.match(/^\/api\/messages\/(\d+)\/read$/);if(request.method==="PATCH"&&readMatch){const message=await markMessageRead(user,readMatch[1]);return message?sendJSON(response,200,{message}):sendJSON(response,403,{message:"No puedes modificar este mensaje."})}
   }
-  if (request.method === "GET" && url.pathname === "/api/status") return sendJSON(response,200,{server:"TalentSync",translationMode:"local-offline",assistantMode:"local-talentsync",aiConfigured:Boolean(process.env.AI_API_URL&&configuredSecret(process.env.AI_API_KEY)&&process.env.AI_MODEL)});
+  if (request.method === "GET" && url.pathname === "/api/status") return sendJSON(response,200,{server:"TalentSync",translationMode:"local-offline",assistantMode:configuredSecret(process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY)?"gemini-with-local-fallback":"local-talentsync",aiConfigured:configuredSecret(process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY)});
   if (request.method === "POST" && url.pathname === "/api/analyze-cv") return handleCVAnalysis(request,response);
   if (request.method === "POST" && url.pathname === "/api/chat") return handleChat(request,response);
   try {
