@@ -6,12 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ---
 
-## [Sin publicar] (Unreleased)
+## [1.1.0] - 2026-08-26
 
-### Planeado
-- Pruebas unitarias e integración continua automatizada (CI/CD).
-- Exportación de reportes de candidatos en formato PDF y CSV.
-- Filtros avanzados por rango de experiencia y habilidades técnicas en la vista de candidatos.
+### Añadido (Added)
+- **Documentación Estratégica y Comercial**:
+  - Creación del **Dossier Comercial y Framework de Ventas B2B** (`docs/PITCH_COMERCIAL_TALENTSYNC.md`) para presentación y venta a empresas, departamentos de RRHH y consultoras de talento.
+  - Integración de guiones de **Elevator Pitch** (30s y 60s), matriz de problemas del mercado vs. soluciones (**Framework PAS**), mapeo de funcionalidades a valor de negocio (*Feature-to-Value Mapping*) y modelo de cálculo de ROI (-65% en *Time-to-Hire*).
+  - Playbook de manejo de objeciones comerciales, estructura de presentación ejecutiva (*10-Slide Pitch Deck*), guion de demostración en vivo de 10 minutos y plantillas de prospección en frío por correo y LinkedIn.
 
 ---
 
