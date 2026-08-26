@@ -9,7 +9,7 @@ import { authenticatedUser, contactsFor, conversationsFor, createMessage, endSes
 try { process.loadEnvFile(); } catch { /* La configuración de IA es opcional. */ }
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "public");
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".mp4": "video/mp4" };
 function configuredSecret(value){return Boolean(value&&!/^(?:tu_|your_|example|change[-_]?me)/i.test(value.trim()))}
 
 function sendJSON(response, status, payload) {
@@ -92,11 +92,54 @@ createServer(async (request, response) => {
   if (request.method === "POST" && url.pathname === "/api/chat") return handleChat(request,response);
   try {
     const pathname = decodeURIComponent(url.pathname);
-    const requested = pathname === "/" ? "/pages/index.html" : pathname;
+    const requested = pathname === "/" ? "/pages/landing.html" : pathname;
     const safePath = normalize(requested).replace(/^(\.\.(\/|\\|$))+/, "");
     const file = join(root, safePath);
-    if (!(await stat(file)).isFile()) throw new Error("Not found");
-    response.writeHead(200, { "Content-Type": types[extname(file)] || "application/octet-stream", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" });
+    const fileStats = await stat(file);
+    if (!fileStats.isFile()) throw new Error("Not found");
+
+    const extension = extname(file);
+    const contentType = types[extension] || "application/octet-stream";
+    const range = request.headers.range;
+
+    if (extension === ".mp4" && range) {
+      const match = range.match(/^bytes=(\d*)-(\d*)$/);
+
+      if (!match) {
+        response.writeHead(416, { "Content-Range": `bytes */${fileStats.size}` });
+        return response.end();
+      }
+
+      const start = match[1] ? Number(match[1]) : 0;
+      const end = match[2] ? Number(match[2]) : fileStats.size - 1;
+
+      if (start > end || end >= fileStats.size) {
+        response.writeHead(416, { "Content-Range": `bytes */${fileStats.size}` });
+        return response.end();
+      }
+
+      const fileBuffer = await readFile(file);
+      const chunk = fileBuffer.subarray(start, end + 1);
+
+      response.writeHead(206, {
+        "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${start}-${end}/${fileStats.size}`,
+        "Content-Length": chunk.length,
+        "Content-Type": contentType,
+        "Cache-Control": "no-cache",
+        "X-Content-Type-Options": "nosniff"
+      });
+
+      return response.end(chunk);
+    }
+
+    response.writeHead(200, {
+      "Content-Type": contentType,
+      "Content-Length": fileStats.size,
+      "Accept-Ranges": extension === ".mp4" ? "bytes" : "none",
+      "Cache-Control": "no-cache",
+      "X-Content-Type-Options": "nosniff"
+    });
     response.end(await readFile(file));
   } catch {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

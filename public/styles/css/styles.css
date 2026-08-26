@@ -1312,5 +1312,88 @@ html[data-theme="dark"] .cv-dropzone:hover,html[data-theme="dark"] .cv-dropzone.
 
 /* Barra superior alineada */
 .topbar{flex-wrap:nowrap}.global-search{min-width:0;flex:0 1 500px}.top-actions{flex:none;flex-wrap:nowrap;align-self:center;margin-left:auto}.top-actions>*{flex:none}.notification-wrap{display:flex;align-items:center;margin-left:3px}.notification{border:1px solid var(--line);background:var(--surface);color:var(--ink)}.notification:hover{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}#notification-count:not(:empty){position:absolute;top:-7px;right:-7px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border:2px solid var(--surface);border-radius:999px;background:var(--red);color:#fff;font-size:.62rem;line-height:1}.notification-panel{top:46px;right:0}
+
+/* Transición compartida entre las páginas internas de TalentSync. */
+html,
+body {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+html.ts-booting body {
+  overflow: hidden;
+}
+
+html.ts-booting body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: var(--bg);
+}
+
+html.ts-booting body::after {
+  content: "TS";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow);
+  font-size: 18px;
+  font-weight: 800;
+  transform: translate(-50%, -50%);
+  animation: talentsync-boot-pulse 800ms ease-in-out infinite alternate;
+}
+
+@keyframes talentsync-boot-pulse {
+  from {
+    opacity: 0.72;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: talentsync-page-out 120ms ease both;
+}
+
+::view-transition-new(root) {
+  animation: talentsync-page-in 160ms ease both;
+}
+
+@keyframes talentsync-page-out {
+  to {
+    opacity: 0.96;
+  }
+}
+
+@keyframes talentsync-page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.ts-booting body::after,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
 @media(max-width:900px) and (min-width:821px){.topbar{gap:8px;padding-inline:18px}.language-control select{max-width:105px}.global-search{flex-basis:260px}}
 @media(max-width:620px){.top-actions>.avatar{display:none}.topbar{gap:7px}.notification-wrap{margin-left:0}.quick-access-list{grid-template-columns:1fr}}
