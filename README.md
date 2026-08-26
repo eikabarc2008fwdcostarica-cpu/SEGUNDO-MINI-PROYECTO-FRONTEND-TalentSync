@@ -1,8 +1,8 @@
 # TalentSync Multipágina
 
-TalentSync es una plataforma administrativa de reclutamiento construida con HTML5, CSS3, JavaScript vanilla, ES Modules, Node.js, Fetch API, DummyJSON y localStorage. Cada área funcional tiene ahora su propio documento HTML; no utiliza routing SPA ni frameworks frontend.
+TalentSync es una plataforma académica de reclutamiento construida con HTML5, CSS3, JavaScript vanilla, ES Modules, Node.js, Fetch API y APIs REST. Cada área funcional tiene su propio HTML y comparte autenticación, layout y servicios.
 
-## Instalación y ejecución
+## Ejecución
 
 Requiere Node.js 20 o superior.
 
@@ -11,97 +11,65 @@ npm install
 npm start
 ```
 
-Abrir `http://localhost:5173`. Credenciales de demostración: `emilys` / `emilyspass`.
+Abrir `http://localhost:5173`. No utilizar Live Server: los roles, mensajes, idiomas y análisis de CV dependen del backend Node.
 
-## Mapa de páginas
+## Usuarios demo
 
-| Página | Función |
-|---|---|
-| `pages/index.html` | Login exclusivo |
-| `dashboard.html` | Resumen general |
-| `candidatos.html` | Gestión de candidatos |
-| `vacantes.html` | Gestión de vacantes |
-| `empresas.html` | Empresas clientes |
-| `postulaciones.html` | Pipeline de postulaciones |
-| `entrevistas.html` | Evaluaciones y Calendario Maestro |
-| `tareas.html` | Tareas diarias y progreso |
-| `ofertas.html` | Ofertas laborales a candidatos |
-| `mensajeria.html` | Conversaciones locales |
-| `ayuda.html` | Ayuda, accesibilidad e inclusión |
-| `analisis-cv.html` | Match explicable CV/vacante |
-| `seguimiento-cliente.html` | Portal de seguimiento del cliente |
+Estas cuentas son exclusivamente académicas y se validan en Node; las contraseñas no están en el frontend.
 
-Empresas abre `seguimiento-cliente.html?id=...`; Candidatos abre `mensajeria.html?candidateId=...` y `analisis-cv.html?candidateId=...`; Postulaciones puede enviar candidato y vacante mediante parámetros URL.
+| Rol | Usuario | Contraseña |
+|---|---|---|
+| Reclutador | `recruiter.demo` | `Recruiter2026!` |
+| Candidato | `candidate.demo` | `Candidate2026!` |
+| Reclutador de empresa | `company.demo` | `Company2026!` |
 
-## Arquitectura
+## Roles y permisos
 
-```text
-public/
-├── pages/
-│   ├── index.html
-│   ├── dashboard.html
-│   ├── candidatos.html
-│   ├── vacantes.html
-│   ├── empresas.html
-│   ├── postulaciones.html
-│   ├── entrevistas.html
-│   ├── tareas.html
-│   ├── ofertas.html
-│   ├── mensajeria.html
-│   ├── ayuda.html
-│   ├── analisis-cv.html
-│   └── seguimiento-cliente.html
-├── styles/css/styles.css
-└── js/
-    ├── common/
-    │   ├── auth.js
-    │   ├── layout.js
-    │   ├── notifications.js
-    │   ├── search.js
-    │   ├── ui.js
-    │   └── resource-page.js
-    ├── services/
-    │   ├── api.js
-    │   └── cv-api.js
-    └── pages/
-        ├── login.js
-        └── un módulo por página
-```
+- Reclutador: dashboard, candidatos, vacantes, empresas, postulaciones, entrevistas, tareas, ofertas, mensajería y análisis de CV.
+- Candidato: perfil y CV, postulaciones propias, entrevistas, ofertas, mensajería y notificaciones.
+- Reclutador de empresa: resumen, vacantes, candidatos vinculados, postulaciones, entrevistas, seguimiento y mensajería.
 
-El layout común genera sidebar, topbar, perfil, búsqueda, notificaciones, logout, modal y toasts. La navegación contiene enlaces HTML reales y marca la página activa mediante `body[data-page]`.
+Cada página solicita `/api/permissions` antes de renderizar. Una URL fuera del rol redirige al dashboard. Los endpoints de mensajes vuelven a validar sesión, participantes y relación permitida en Node.
 
-## Autenticación y sesión
+## Idiomas
 
-El login usa `POST /auth/login` de DummyJSON. La sesión, usuario, token y última actividad se comparten mediante `localStorage`. `auth.js` protege todas las páginas privadas y las redirige a `index.html` cuando no hay sesión válida. Después de 30 minutos sin actividad limpia la sesión. Logout funciona desde cualquier página.
+El selector incluye únicamente español, inglés, chino, francés y portugués. La traducción utiliza diccionarios incluidos en el frontend, funciona sin conexión y conserva la preferencia en `talentsync_language`. No necesita claves, credenciales ni servicios de traducción externos.
 
-## Servicios compartidos y DummyJSON
+## Búsqueda global
 
-`js/services/api.js` centraliza autorización, timeout y errores para:
+El buscador compartido consulta páginas, candidatos, vacantes y postulaciones. Reconoce aliases, mayúsculas, acentos, IDs, códigos como `APP-2041`, correos y símbolos como `C#`, `C++` y `UX/UI`. Admite ArrowUp, ArrowDown, Enter y Escape.
 
-- Candidatos → `/users`
-- Vacantes → `/products`
-- Empresas → `/carts`
-- Postulaciones → `/posts`
-- Entrevistas → `/comments`
-- Tareas → `/todos`
+## Mensajería interna
 
-DummyJSON simula POST, PATCH y DELETE, pero no persiste definitivamente los cambios.
+Los mensajes se guardan en `data/messages.json`, no en `localStorage`. La interfaz consulta cambios cada cinco segundos únicamente mientras Mensajería está abierta.
 
-## Datos locales
+Endpoints:
 
-Ofertas, conversaciones, decisiones del portal y resultados de CV se guardan en localStorage porque DummyJSON no ofrece esas entidades. No representan mensajes, contratos ni decisiones enviados a servicios reales.
+- `GET /api/users`
+- `GET /api/messages`
+- `GET /api/messages/:conversationId`
+- `POST /api/messages`
+- `PATCH /api/messages/:id/read`
 
-## Análisis de CV
+Relaciones permitidas: candidato ↔ reclutador, reclutador ↔ empresa y candidato ↔ empresa cuando comparten una relación activa de empresa.
 
-`POST /api/analyze-cv` recibe PDF o DOCX de hasta 5 MB, obtiene la vacante, extrae texto en memoria y devuelve un resultado JSON explicable. PDF Parse y Mammoth procesan el documento sin escribirlo en disco. El buffer se elimina después de extraer el texto.
+## Notificaciones, sonido y banner
 
-Sin configuración externa usa el analizador local explicable. Para un servicio de IA compatible con JSON, copiar `.env.example` como `.env` y definir `AI_API_URL`, `AI_API_KEY` y `AI_MODEL`. La clave permanece exclusivamente en Node.js.
+La campana resume mensajes no leídos, entrevistas y tareas permitidas por rol. El sonido se genera con Web Audio API después de una interacción válida y puede desactivarse; la preferencia queda en `localStorage`. No suena al navegar.
 
-El porcentaje describe coincidencia documental; no es probabilidad de contratación. Atributos sensibles no participan y ninguna decisión se ejecuta automáticamente.
+El banner utiliza tres SVG propios en `public/imgs`, rota cada seis segundos y desactiva la rotación con `prefers-reduced-motion: reduce`.
 
-## Responsive y accesibilidad
+## Datos y persistencia
 
-El CSS global soporta escritorio, tablet y móvil desde 320 px. Incluye drawer móvil, tablas con scroll controlado, mensajería adaptable, calendario desplazable, labels, focus visible, dialogs accesibles, regiones ARIA y `prefers-reduced-motion`.
+- Datos externos de demostración: DummyJSON (`users`, `products`, `carts`, `posts`, `comments`, `todos`). Sus escrituras son simuladas.
+- Usuarios demo y mensajes: archivos JSON administrados por Node en `data/`.
+- Preferencias, etapas de pipeline y perfil candidato: `localStorage` del navegador.
+- CV: PDF/DOCX procesado temporalmente en memoria; no se guarda el archivo.
+- IA y traducción: servicios externos opcionales configurados en `.env`.
+
+## Diseño
+
+Empresas, Postulaciones y Vacantes reutilizan la información y acciones existentes con la jerarquía visual de las referencias proporcionadas: métricas, cards corporativas, pipeline y tarjetas de progreso. La marca permanece TalentSync y no se copiaron nombres, logos ni fotografías de las referencias.
 
 ## Pruebas
 
@@ -109,4 +77,4 @@ El CSS global soporta escritorio, tablet y móvil desde 320 px. Incluye drawer m
 npm test
 ```
 
-Las pruebas verifican cálculo CV, páginas requeridas, IDs únicos, imports existentes y sintaxis de todos los módulos.
+Las pruebas comprueban páginas, rutas, sintaxis, roles demo, permisos, catálogo de idiomas, mensajería segura, análisis de CV y paletas accesibles.

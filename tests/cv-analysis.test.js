@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeEvidence, SCORE_WEIGHTS } from "../cv-analysis.js";
+import { analyzeEvidence, parseAIJSON, SCORE_WEIGHTS } from "../cv-analysis.js";
 
 test("calcula un score explicable entre 0 y 100 usando evidencia", () => {
   const result = analyzeEvidence("Ingeniera con 6 años de experiencia. JavaScript, GitHub, AWS y PostgreSQL.", { id:1, title:"JavaScript Developer", description:"5 años, JavaScript, Git, AWS, SQL", category:"software" });
@@ -23,4 +23,9 @@ test("no otorga puntos cuando la vacante carece de requisitos profesionales", ()
   assert.equal(result.matchPercentage,0);
   assert.equal(result.classification,"Datos insuficientes");
   assert.deepEqual(result.methodology.applicableCategories,[]);
+});
+
+test("acepta JSON de IA envuelto en markdown o texto adicional",()=>{
+  assert.deepEqual(parseAIJSON('```json\n{"ok":true}\n```'),{ok:true});
+  assert.deepEqual(parseAIJSON('null\n{"ok":true}\ntexto adicional'),{ok:true});
 });

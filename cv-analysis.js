@@ -98,15 +98,25 @@ function normalizeAIResponse(value) {
   return value;
 }
 
+export function parseAIJSON(raw) {
+  const cleaned=String(raw).trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");
+  try{return JSON.parse(cleaned)}catch{}
+  const start=cleaned.indexOf("{");if(start<0)throw new Error("El servicio IA no devolvió JSON válido.");
+  let depth=0,inString=false,escaped=false;
+  for(let index=start;index<cleaned.length;index++){const char=cleaned[index];if(inString){if(escaped)escaped=false;else if(char==="\\")escaped=true;else if(char==='"')inString=false;continue}if(char==='"'){inString=true;continue}if(char==="{")depth++;if(char==="}"&&--depth===0){try{return JSON.parse(cleaned.slice(start,index+1))}catch{break}}}
+  throw new Error("El servicio IA devolvió JSON incompleto o incompatible.");
+}
+
 export async function analyzeWithConfiguredAI(cvText, vacancy) {
-  if (!process.env.AI_API_URL || !process.env.AI_API_KEY || !process.env.AI_MODEL) return analyzeEvidence(cvText, vacancy);
+  const hasRealKey=Boolean(process.env.AI_API_KEY&&!/^(?:tu_|your_|example|change[-_]?me)/i.test(process.env.AI_API_KEY.trim()));
+  if (!process.env.AI_API_URL || !hasRealKey || !process.env.AI_MODEL) return analyzeEvidence(cvText, vacancy);
   const instruction = `Analiza exclusivamente el contenido proporcionado. No inventes habilidades ni experiencia. No infieras características personales o sensibles. Compara el CV con los requisitos de la vacante. Diferencia evidencia encontrada, parcial y no encontrada. Devuelve JSON con matchPercentage, classification, summary, categoryScores (skills, experience, tools, education, certifications, essentialRequirements), strengths, gaps, matchedRequirements, missingRequirements y keywordComparison. Nunca recomiendes contratar o rechazar. Pesos: ${JSON.stringify(SCORE_WEIGHTS)}.`;
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 30000);
   try {
     const response = await fetch(process.env.AI_API_URL, { method:"POST", signal:controller.signal, headers:{ "Content-Type":"application/json", Authorization:`Bearer ${process.env.AI_API_KEY}` }, body:JSON.stringify({ model:process.env.AI_MODEL, response_format:{ type:"json_object" }, messages:[{ role:"system", content:instruction },{ role:"user", content:`VACANTE:\n${vacancyEvidence(vacancy)}\n\nCURRÍCULUM PROFESIONAL:\n${professionalCVText(cvText).slice(0,50000)}` }] }) });
     if (!response.ok) throw new Error("Servicio IA no disponible.");
     const payload = await response.json(), raw = payload.choices?.[0]?.message?.content ?? payload.output_text ?? payload;
-    return normalizeAIResponse(typeof raw === "string" ? JSON.parse(raw) : raw);
+    return normalizeAIResponse(typeof raw === "string" ? parseAIJSON(raw) : raw);
   } catch (error) {
     if (error.name === "AbortError") throw new Error("El servicio IA superó el tiempo de espera.");
     throw error;
