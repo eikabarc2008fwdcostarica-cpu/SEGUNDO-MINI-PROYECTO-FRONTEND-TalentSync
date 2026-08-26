@@ -1397,3 +1397,125 @@ html.ts-booting body::after {
 }
 @media(max-width:900px) and (min-width:821px){.topbar{gap:8px;padding-inline:18px}.language-control select{max-width:105px}.global-search{flex-basis:260px}}
 @media(max-width:620px){.top-actions>.avatar{display:none}.topbar{gap:7px}.notification-wrap{margin-left:0}.quick-access-list{grid-template-columns:1fr}}
+
+.confirmation-step {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 8px 4px 18px;
+  text-align: center;
+}
+
+.confirmation-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.confirmation-step p,
+.confirmation-step strong,
+.confirmation-step small {
+  margin: 0;
+}
+
+.confirmation-step strong {
+  color: var(--text);
+}
+
+.confirmation-step small {
+  color: var(--muted);
+}
+
+.confirmation-step.danger .confirmation-icon {
+  background: color-mix(in srgb, var(--red) 14%, var(--surface));
+  color: var(--red);
+}
+
+/* Botón de notificaciones: misma identidad visual que las acciones principales. */
+.topbar .notification {
+  position: relative;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.topbar .notification > span {
+  position: static;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  font-size: 0;
+}
+
+.topbar .notification::before {
+  content: "";
+  width: 14px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-bottom-width: 3px;
+  border-radius: 8px 8px 4px 4px;
+  transform: translateY(-1px);
+}
+
+.topbar .notification::after {
+  content: "";
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  width: 5px;
+  height: 2px;
+  border-radius: 0 0 5px 5px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.topbar .notification:hover,
+.topbar .notification[aria-expanded="true"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+  transform: translateY(-1px);
+}
+
+.topbar .notification:active {
+  transform: translateY(0);
+}
+
+.topbar .notification:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  outline-offset: 2px;
+}
+
+.assistant-panel > header div strong,
+.assistant-panel > header div small {
+  display: block;
+}
+
+.assistant-panel > header div small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.assistant-scope {
+  margin: 0;
+  padding: 0 12px 12px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-align: center;
+}
